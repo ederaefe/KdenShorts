@@ -22,6 +22,11 @@ from clip_harvester.kdenlive.launcher import open_in_kdenlive
 from clip_harvester.kdenlive.timecode import seconds_to_timecode
 from clip_harvester.kdenlive.xml_builder import write_kdenlive_project
 from clip_harvester.media.audio import AudioChunk, extract_and_chunk_audio
+from clip_harvester.media.downloader import (
+    DependencyDownloader,
+    check_ffmpeg_available,
+    ensure_bin_in_path,
+)
 from clip_harvester.media.probe import (
     probe_media_file,
     verify_ffmpeg_installed,
@@ -33,6 +38,7 @@ from clip_harvester.ui.interactive import (
     prompt_for_profile,
     render_summary_panel,
 )
+from clip_harvester.ui.onboarding import run_concurrent_onboarding
 from clip_harvester.ui.theme import (
     console,
     error,
@@ -44,23 +50,36 @@ from clip_harvester.ui.theme import (
 )
 
 
-def perform_preflight_checks() -> None:
-    """Verifies that all required system binaries and credentials exist."""
-    missing = []
-    if not verify_ffmpeg_installed():
-        missing.append("ffmpeg is not installed or not discoverable in Windows PATH.")
-    if not verify_ffprobe_installed():
-        missing.append("ffprobe is not installed or not discoverable in Windows PATH.")
-    if not check_api_key_present():
-        missing.append("GEMINI_API_KEY environment variable is not set. Run: $env:GEMINI_API_KEY='key'")
+def perform_preflight_checks(strict: bool = False) -> Tuple[bool, bool, bool]:
+    """Verifies system binaries and credentials, returning availability flags.
 
-    if missing:
+    Args:
+        strict: When True, prints an error panel and terminates if any dependency is missing.
+
+    Returns:
+        Tuple of (has_ffmpeg, has_ffprobe, has_api_key).
+    """
+    ensure_bin_in_path()
+    has_ffmpeg, has_ffprobe = check_ffmpeg_available()
+    has_key = check_api_key_present()
+
+    if strict and (not has_ffmpeg or not has_ffprobe or not has_key):
+        missing = []
+        if not has_ffmpeg:
+            missing.append("ffmpeg is not installed or not discoverable in Windows PATH.")
+        if not has_ffprobe:
+            missing.append("ffprobe is not installed or not discoverable in Windows PATH.")
+        if not has_key:
+            missing.append("GEMINI_API_KEY environment variable is not set. Run: $env:GEMINI_API_KEY='key'")
+
         console.print()
         error("Pre-flight environment checks failed:")
         for item in missing:
             console.print(f"   [dim red]•[/dim red] {item}")
         console.print("\n [dim]Please address the prerequisites above and re-run.[/dim]\n")
         sys.exit(1)
+
+    return has_ffmpeg, has_ffprobe, has_key
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -149,16 +168,37 @@ def run_pipeline() -> int:
     """Executes the interactive Clip Harvester workflow."""
     args = parse_arguments()
     render_header(__version__)
-    perform_preflight_checks()
 
-    # 1. Acquire media source path
-    if args.media_path:
-        source_media: Path = args.media_path.resolve()
-        profile_choice: str = args.profile
+    has_ffmpeg, has_ffprobe, has_key = perform_preflight_checks(strict=False)
+    needs_downloader = not (has_ffmpeg and has_ffprobe)
+
+    downloader: Optional[DependencyDownloader] = None
+    if needs_downloader:
+        info("FFmpeg/FFprobe binaries not detected. Launching portable background downloader...")
+        downloader = DependencyDownloader()
+        downloader.start()
+
+    # Determine if onboarding wizard is required
+    needs_onboarding = (
+        downloader is not None
+        or not has_key
+        or args.media_path is None
+        or not args.media_path.exists()
+    )
+
+    if needs_onboarding:
+        try:
+            source_media, profile_choice = run_concurrent_onboarding(
+                downloader=downloader,
+                media_path=args.media_path,
+                profile_name=args.profile,
+            )
+        except RuntimeError as e:
+            error(f"Onboarding failed: {e}")
+            return 1
     else:
-        info("No media file specified. Entering interactive wizard mode.")
-        source_media = prompt_for_media_file()
-        profile_choice = prompt_for_profile()
+        source_media = args.media_path.resolve()
+        profile_choice = args.profile
 
     if not source_media.exists():
         error(f"Source file does not exist: {source_media}")
@@ -301,7 +341,8 @@ def run_pipeline() -> int:
         if open_in_kdenlive(output_kdenlive):
             success(f"Kdenlive launched with {output_kdenlive.name} loaded!")
         else:
-            warning("Could not launch Kdenlive automatically. Please double-click the file to open.")
+            warning("Could not launch Kdenlive automatically. Please double-click the project file to open.")
+            info("To install Kdenlive on Windows, run: winget install KDE.Kdenlive")
 
     return 0
 

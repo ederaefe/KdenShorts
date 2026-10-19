@@ -118,3 +118,19 @@ Before generating the `.kdenlive` XML file, the terminal displays an interactive
 - `flash` or `flash-latest`: Automatically maps to active Flash release (`gemini-2.5-flash`).
 - `pro` or `pro-latest`: Automatically maps to active Pro release (`gemini-2.5-pro`).
 - Explicit IDs: You can also pass any full model string directly (e.g. `--model gemini-3.0-flash`).
+
+---
+
+## 5. Background Dependency Downloader & Concurrent Onboarding
+
+To provide a friction-free experience for users on new machines without system dependencies (`ffmpeg` or `kdenlive`):
+
+1. **Non-Blocking Background Thread**: If `ffmpeg` or `ffprobe` is not found on the active `PATH`, `DependencyDownloader` immediately spawns a background daemon thread that streams official static release builds into `%LOCALAPPDATA%\KdenShorts\bin\`.
+2. **Zero Idling / Active Onboarding**: While the ~90MB archive downloads in the background, the user is never stuck waiting at an empty progress screen. Instead, the interactive onboarding wizard executes concurrently:
+   - Validates or prompts for `GEMINI_API_KEY` with a live ping to Google AI Studio.
+   - Allows drag-and-drop ingestion of the target media file with path sanitization.
+   - Configures the selection profile (`sermon`, `podcast`, `general`).
+   - Presents educational guidance for editing 9:16 vertical video in Kdenlive (canvas scaling, face centering, motion tracking, auto-subtitles).
+3. **Barrier Synchronization**: Once user configuration is complete, the wizard checks the background downloader state. If the archive is still in-flight, it displays a compact Rich percentage bar until extraction finishes and runtime `PATH` is updated.
+4. **Zero Overhead for Configured Systems**: When `ffmpeg` and credentials already exist, all background mechanisms are bypassed entirely for an instantaneous 0ms startup.
+

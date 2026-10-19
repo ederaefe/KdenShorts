@@ -158,13 +158,12 @@ python --version
 ```
 
 ### 2. FFmpeg & FFprobe
-KdenShorts uses `ffmpeg` for audio slicing and `ffprobe` for frame-accurate metadata discovery. Verify they are accessible in your system `PATH`:
-```powershell
-ffmpeg -version
-ffprobe -version
-```
+KdenShorts uses `ffmpeg` for audio slicing and `ffprobe` for frame-accurate metadata discovery.
 
-**Quick Install Options for Windows:**
+> [!NOTE]
+> **Automatic Zero-Config Downloader:** If you don't have FFmpeg pre-installed, KdenShorts handles it for you automatically! When started without local binaries, a background worker streams and unpacks official portable static builds into `%LOCALAPPDATA%\KdenShorts\bin\` while you interactively validate your API key, select your source video, and review Kdenlive vertical editing tips.
+
+If you prefer to install system-wide FFmpeg manually:
 - **Via Windows Package Manager (Winget - Recommended):**
   ```powershell
   winget install Gyan.FFmpeg
@@ -366,7 +365,7 @@ usage: kdenshorts [-h] [--profile {sermon,podcast,general}]
                   [--max-clips MAX_CLIPS] [--min-duration MIN_DURATION]
                   [--max-duration MAX_DURATION] [--output OUTPUT]
                   [--model MODEL] [--chunk-duration CHUNK_DURATION]
-                  [--yes] [--keep-temp]
+                  [--yes] [--open] [--keep-temp]
                   [media_path]
 
 positional arguments:

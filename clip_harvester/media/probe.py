@@ -24,12 +24,16 @@ class MediaMetadata:
 
 
 def verify_ffprobe_installed() -> bool:
-    """Verifies that ffprobe executable is discoverable in PATH."""
+    """Verifies that ffprobe executable is discoverable in PATH or managed cache."""
+    from clip_harvester.media.downloader import ensure_bin_in_path
+    ensure_bin_in_path()
     return shutil.which("ffprobe") is not None
 
 
 def verify_ffmpeg_installed() -> bool:
-    """Verifies that ffmpeg executable is discoverable in PATH."""
+    """Verifies that ffmpeg executable is discoverable in PATH or managed cache."""
+    from clip_harvester.media.downloader import ensure_bin_in_path
+    ensure_bin_in_path()
     return shutil.which("ffmpeg") is not None
 
 

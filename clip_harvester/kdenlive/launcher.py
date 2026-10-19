@@ -87,3 +87,35 @@ def open_in_kdenlive(project_path: Path, custom_exe: Optional[Path] = None) -> b
             return False
 
     return False
+
+
+def trigger_kdenlive_background_install() -> Optional[subprocess.Popen]:
+    """Triggers background installation of Kdenlive via winget if available.
+
+    Returns the subprocess.Popen instance running the installer, or None if winget is unavailable.
+    """
+    if os.name != "nt":
+        return None
+
+    winget_path = shutil.which("winget")
+    if not winget_path:
+        return None
+
+    try:
+        cmd = [
+            winget_path,
+            "install",
+            "KDE.Kdenlive",
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+        ]
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.DETACHED_PROCESS,
+        )
+        return proc
+    except Exception:
+        return None
