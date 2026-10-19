@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / Test Caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments & API Keys
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# OS and Editor metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local media scratch files
+temp_harvester_*
