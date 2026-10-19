@@ -64,16 +64,19 @@ def perform_preflight_checks(strict: bool = False) -> Tuple[bool, bool, bool]:
     has_key = check_api_key_present()
 
     if strict and (not has_ffmpeg or not has_ffprobe or not has_key):
+        from clip_harvester.bootstrap import detect_os_info
+
+        os_info = detect_os_info()
         missing = []
         if not has_ffmpeg:
-            missing.append("ffmpeg is not installed or not discoverable in Windows PATH.")
+            missing.append(f"ffmpeg is not installed or discoverable. ({os_info.display_name}: {os_info.ffmpeg_install_cmd})")
         if not has_ffprobe:
-            missing.append("ffprobe is not installed or not discoverable in Windows PATH.")
+            missing.append(f"ffprobe is not installed or discoverable. ({os_info.display_name}: {os_info.ffmpeg_install_cmd})")
         if not has_key:
-            missing.append("GEMINI_API_KEY environment variable is not set. Run: $env:GEMINI_API_KEY='key'")
+            missing.append("GEMINI_API_KEY environment variable is not set. Run: $env:GEMINI_API_KEY='key' (Windows) or export GEMINI_API_KEY='key' (Linux/macOS)")
 
         console.print()
-        error("Pre-flight environment checks failed:")
+        error(f"Pre-flight environment checks failed on {os_info.display_name}:")
         for item in missing:
             console.print(f"   [dim red]•[/dim red] {item}")
         console.print("\n [dim]Please address the prerequisites above and re-run.[/dim]\n")
@@ -341,8 +344,11 @@ def run_pipeline() -> int:
         if open_in_kdenlive(output_kdenlive):
             success(f"Kdenlive launched with {output_kdenlive.name} loaded!")
         else:
+            from clip_harvester.bootstrap import detect_os_info
+
+            os_info = detect_os_info()
             warning("Could not launch Kdenlive automatically. Please double-click the project file to open.")
-            info("To install Kdenlive on Windows, run: winget install KDE.Kdenlive")
+            info(f"To install Kdenlive for {os_info.display_name}, run: {os_info.kdenlive_install_cmd}")
 
     return 0
 

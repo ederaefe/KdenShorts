@@ -66,6 +66,16 @@ class DependencyDownloader(threading.Thread):
 
     def run(self) -> None:
         """Executes the download and extraction workflow in the background."""
+        if os.name != "nt":
+            from clip_harvester.bootstrap import detect_os_info
+
+            os_info = detect_os_info()
+            with self._lock:
+                self.completed = True
+                self.error = f"Portable zip downloader is configured for Windows. On {os_info.display_name}, please run: {os_info.ffmpeg_install_cmd}"
+                self.status = f"Run: {os_info.ffmpeg_install_cmd}"
+            return
+
         urls = [FFMPEG_WINDOWS_URL, FFMPEG_FALLBACK_URL]
         success = False
 

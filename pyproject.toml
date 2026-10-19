@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kdenshorts"
+version = "1.0.0"
+description = "Autonomous AI-assisted YouTube Shorts & Reels Harvester for Kdenlive"
+readme = "README.md"
+authors = [{ name = "ederaefe" }]
+license = { text = "Apache-2.0" }
+dependencies = [
+    "google-genai>=1.0.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+kdenshorts = "clip_harvester.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -134,3 +134,20 @@ To provide a friction-free experience for users on new machines without system d
 3. **Barrier Synchronization**: Once user configuration is complete, the wizard checks the background downloader state. If the archive is still in-flight, it displays a compact Rich percentage bar until extraction finishes and runtime `PATH` is updated.
 4. **Zero Overhead for Configured Systems**: When `ffmpeg` and credentials already exist, all background mechanisms are bypassed entirely for an instantaneous 0ms startup.
 
+---
+
+## 6. Zero-Dependency Bootstrap & OS-Tailored Package Installer
+
+To prevent raw `ModuleNotFoundError` crashes when cloning or running KdenShorts for the first time:
+
+1. **Standard Library Bootstrap**: The entry points (`kdenshorts.py` and `clip_harvester/__main__.py`) run `ensure_environment()` from `clip_harvester.bootstrap` before importing any external third-party package (`google-genai`, `rich`, `pydantic`).
+2. **Deterministic OS & Distro Detection**: `detect_os_info()` maps platform architecture and operating systems to exact native package management workflows:
+   - **Windows**: Maps to `py -m pip install -r requirements.txt`, `winget install Gyan.FFmpeg`, and `winget install KDE.Kdenlive`.
+   - **macOS (Darwin)**: Maps to `pip3 install -r requirements.txt`, `brew install ffmpeg`, and `brew install --cask kdenlive`.
+   - **Linux (Debian / Ubuntu / Mint)**: Reads `/etc/os-release` and maps to `pip3 install -r requirements.txt`, `sudo apt install ffmpeg`, and `sudo apt install kdenlive`.
+   - **Linux (Fedora / RHEL)**: Maps to `sudo dnf install ffmpeg` and `sudo dnf install kdenlive`.
+   - **Linux (Arch / Manjaro)**: Maps to `sudo pacman -S ffmpeg` and `sudo pacman -S kdenlive`.
+3. **Automatic In-Place Installation**: When missing Python modules are detected on launch, `bootstrap` displays a clean ASCII notice and executes `pip install` automatically in-process via `sys.executable`.
+4. **Fallback Guidance**: If automated installation is blocked (e.g. offline, corporate proxy, restricted container), the bootstrap exits cleanly without a traceback, outputting the exact, copy-pasteable terminal command for the user's detected operating system.
+
+

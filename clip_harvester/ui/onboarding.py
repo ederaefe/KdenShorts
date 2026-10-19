@@ -164,7 +164,10 @@ def run_concurrent_onboarding(
     if downloader:
         ok = wait_for_downloader_with_progress(downloader)
         if not ok:
-            error("Cannot proceed without FFmpeg. Please install manually via: winget install Gyan.FFmpeg")
+            from clip_harvester.bootstrap import detect_os_info
+
+            os_info = detect_os_info()
+            error(f"Cannot proceed without FFmpeg. Please install manually for {os_info.display_name}: {os_info.ffmpeg_install_cmd}")
             raise RuntimeError("FFmpeg dependency unavailable.")
         success("All system dependencies verified.")
 
