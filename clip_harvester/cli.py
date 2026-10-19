@@ -222,9 +222,9 @@ def run_pipeline() -> int:
             error(f"Failed to inspect media: {e}")
             return 1
 
-    info(f"Duration:   [bold bright_white]{seconds_to_timecode(metadata.duration_seconds)}[/bold bright_white] ({metadata.duration_seconds:.1f}s)")
-    info(f"Resolution: [bold bright_white]{metadata.width}x{metadata.height}[/bold bright_white] | Canvas: [cyan]9:16 Vertical[/cyan]")
-    info(f"Frame Rate: [bold bright_white]{metadata.fps} FPS[/bold bright_white] ({metadata.fps_num}/{metadata.fps_den})")
+    info(f"[bold black on bright_cyan] DURATION [/] [bold bright_white]{seconds_to_timecode(metadata.duration_seconds)}[/bold bright_white] ({metadata.duration_seconds:.1f}s)")
+    info(f"[bold black on bright_magenta] CANVAS [/] [bold bright_white]1080x1920 (9:16 Vertical)[/]   [bold black on bright_blue] SOURCE [/] [bold bright_white]{metadata.width}x{metadata.height}[/]")
+    info(f"[bold black on bright_yellow] FRAME RATE [/] [bold bright_white]{metadata.fps} FPS[/bold bright_white] ({metadata.fps_num}/{metadata.fps_den})")
 
     # 4. Stage 2: Extract & Chunk Audio
     render_step(2, 5, "Audio Segmentation", f"{args.chunk_duration // 60}m chunks")
@@ -236,7 +236,7 @@ def run_pipeline() -> int:
                 output_dir=temp_dir,
                 chunk_seconds=args.chunk_duration,
             )
-        success(f"Generated {len(chunks)} audio chunk(s) for analysis.")
+        success(f"Generated [bold bright_white]{len(chunks)}[/bold bright_white] audio segment(s) [dim](16kHz mono, speech-optimized)[/dim]")
     except Exception as e:
         error(f"Audio extraction failed: {e}")
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -244,7 +244,7 @@ def run_pipeline() -> int:
 
     # 5. Stage 3: Gemini Analysis
     model_name = resolve_model_name(args.model)
-    render_step(3, 5, "AI Audio Understanding", f"{model_name} • {profile_choice}")
+    render_step(3, 5, "AI Audio Understanding", f"{model_name} | {profile_choice.upper()}")
     client = create_gemini_client()
     chunk_results: List[Tuple[AudioChunk, ChunkAnalysisResult]] = []
 
@@ -271,7 +271,7 @@ def run_pipeline() -> int:
                     model_name=model_name,
                 )
                 chunk_results.append((chunk, analysis))
-                info(f"Segment {i + 1:02d}: Extracted {len(analysis.clips)} candidate(s) [{c_start} -> {c_end}]")
+                info(f"[bold black on bright_cyan] SEGMENT {i + 1:02d} [/] [bold bright_yellow]{c_start} -> {c_end}[/] :: [bold bright_green]{len(analysis.clips)}[/bold bright_green] candidate(s) extracted")
             except Exception as e:
                 warning(f"Segment {i + 1:02d} failed: {e}")
 

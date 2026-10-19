@@ -1,4 +1,4 @@
-"""Interactive user prompts, clip curation table, and timecode modification loop."""
+"""Interactive user prompts, colorful clip curation table, and timecode modification loop."""
 
 from pathlib import Path
 from typing import List, Optional, Set
@@ -26,10 +26,14 @@ def clean_input_path(raw_path: str) -> Path:
 
 
 def prompt_for_media_file() -> Path:
-    """Interactively prompts the user for a source media file path."""
-    console.print("[bold cyan]>[/bold cyan] [bold bright_white]Drag & drop or enter path to video/audio file:[/bold bright_white]")
+    """Interactively prompts the user for a source media file path with colorful styling."""
+    console.print()
+    console.print(
+        " [bold black on bright_cyan] INPUT [/bold black on bright_cyan] "
+        "[bold bright_white]Drag & drop or enter path to video/audio recording:[/bold bright_white]"
+    )
     while True:
-        raw = Prompt.ask("  [dim]Path[/dim]")
+        raw = Prompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan][dim]Path[/dim]")
         if not raw:
             continue
         p = clean_input_path(raw)
@@ -39,40 +43,60 @@ def prompt_for_media_file() -> Path:
 
 
 def prompt_for_profile() -> str:
-    """Interactively prompts the user to select an extraction profile."""
-    console.print("\n[bold cyan]>[/bold cyan] [bold bright_white]Select content profile:[/bold bright_white]")
-    console.print("  [cyan]1[/cyan] [white]Sermon[/white]    [dim](theological insights, conviction, standalone revelations)[/dim]")
-    console.print("  [cyan]2[/cyan] [white]Podcast[/white]   [dim](contrarian takes, energetic hooks, sharp punchlines)[/dim]")
-    console.print("  [cyan]3[/cyan] [white]General[/white]   [dim](keynote highlights, universal wisdom, high-impact quotes)[/dim]")
+    """Interactively prompts the user to select an extraction profile with colorful options."""
+    console.print()
+    console.print(
+        " [bold black on bright_magenta] PROFILE [/bold black on bright_magenta] "
+        "[bold bright_white]Select content evaluation criteria:[/bold bright_white]"
+    )
+    console.print("   [bold black on bright_cyan] 1 [/] [bold bright_white]SERMON [/]  [dim]|[/] [bright_yellow]Theological depth, conviction, scripture revelations[/]")
+    console.print("   [bold black on bright_cyan] 2 [/] [bold bright_white]PODCAST[/]  [dim]|[/] [bright_magenta]Contrarian debates, energetic banter, comedic punchlines[/]")
+    console.print("   [bold black on bright_cyan] 3 [/] [bold bright_white]GENERAL[/]  [dim]|[/] [bright_cyan]Keynote wisdom, universal quotes, actionable ideas[/]")
 
-    choice = Prompt.ask("  [dim]Select [1-3][/dim]", choices=["1", "2", "3"], default="1")
+    choice = Prompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan][dim]Select [1-3][/dim]", choices=["1", "2", "3"], default="1")
     mapping = {"1": "sermon", "2": "podcast", "3": "general"}
     return mapping[choice]
 
 
 def render_clips_table(clips: List[ValidatedClip], active_indices: Set[int]) -> Table:
-    """Builds a formatted, minimalist table of candidate clips."""
+    """Builds a vibrant, colorful, high-contrast table of candidate clips."""
     table = Table(
-        box=box.SIMPLE_HEAD,
-        show_edge=False,
-        pad_edge=False,
+        box=box.ROUNDED,
+        border_style="bright_blue",
+        show_edge=True,
+        pad_edge=True,
         expand=True,
-        header_style="bold cyan",
+        header_style="bold bright_white on dark_blue",
     )
 
-    table.add_column("SEL", justify="center", width=5, style="bold")
-    table.add_column("#", justify="center", width=4, style="dim white")
-    table.add_column("TITLE & HOOK", ratio=4)
-    table.add_column("TIMECODE", justify="center", width=22)
-    table.add_column("DUR", justify="right", width=8)
-    table.add_column("TYPE", justify="center", width=16, style="dim white")
-    table.add_column("CONF", justify="center", width=8)
+    table.add_column("SEL", justify="center", width=8)
+    table.add_column("#", justify="center", width=4, style="bold bright_white")
+    table.add_column("TITLE & HOOK SENTENCE", ratio=4)
+    table.add_column("TIMECODE", justify="center", width=24)
+    table.add_column("DUR", justify="right", width=9)
+    table.add_column("TYPE", justify="center", width=18)
+    table.add_column("CONF", justify="center", width=10)
 
     for i, clip in enumerate(clips, 1):
         is_active = (i - 1) in active_indices
-        status_badge = "[green][X][/green]" if is_active else "[dim][ ][/dim]"
-        title_style = "bold bright_white" if is_active else "dim white"
-        hook_style = "dim cyan" if is_active else "dim grey50"
+
+        if is_active:
+            status_badge = "[bold black on bright_green] INCL [/]"
+            title_style = "bold bright_cyan"
+            hook_style = "italic bright_yellow"
+            tc_style = "bold bright_white"
+            dur_style = "bold bright_magenta"
+            type_badge = f"[bold black on deep_sky_blue1] {clip.hook_type.upper().replace('_', ' ')[:14]} [/]"
+            conf_color = "bright_green" if clip.confidence == "high" else ("bright_yellow" if clip.confidence == "medium" else "dim")
+            conf_badge = f"[bold black on {conf_color}] {clip.confidence.upper()} [/]"
+        else:
+            status_badge = "[dim] SKIP [/]"
+            title_style = "dim white"
+            hook_style = "dim grey50"
+            tc_style = "dim"
+            dur_style = "dim"
+            type_badge = f"[dim]{clip.hook_type}[/dim]"
+            conf_badge = f"[dim]{clip.confidence}[/dim]"
 
         title_hook = Text.assemble(
             (clip.title, title_style),
@@ -80,11 +104,8 @@ def render_clips_table(clips: List[ValidatedClip], active_indices: Set[int]) -> 
             (f'"{clip.hook_sentence}"', hook_style),
         )
 
-        timecode_str = f"{clip.start_timecode} -> {clip.end_timecode}"
-        dur_str = f"{clip.duration_seconds:.1f}s"
-
-        conf_color = "green" if clip.confidence == "high" else ("yellow" if clip.confidence == "medium" else "dim")
-        conf_badge = f"[{conf_color}]{clip.confidence.upper()}[/{conf_color}]"
+        timecode_str = f"[{tc_style}]{clip.start_timecode}[/] [dim cyan]->[/] [{tc_style}]{clip.end_timecode}[/]"
+        dur_str = f"[{dur_style}]{clip.duration_seconds:.1f}s[/]"
 
         table.add_row(
             status_badge,
@@ -92,7 +113,7 @@ def render_clips_table(clips: List[ValidatedClip], active_indices: Set[int]) -> 
             title_hook,
             timecode_str,
             dur_str,
-            clip.hook_type,
+            type_badge,
             conf_badge,
         )
 
@@ -100,12 +121,15 @@ def render_clips_table(clips: List[ValidatedClip], active_indices: Set[int]) -> 
 
 
 def edit_clip_timecode(clip: ValidatedClip) -> ValidatedClip:
-    """Interactively modifies the start and end timestamps of a clip."""
-    console.print(f"\n[cyan]Editing Clip: {clip.title}[/cyan]")
-    console.print(f"Current range: [bold]{clip.start_timecode}[/bold] -> [bold]{clip.end_timecode}[/bold] ({clip.duration_seconds:.1f}s)")
+    """Interactively modifies the start and end timestamps of a clip with colorful feedback."""
+    console.print(f"\n [bold black on bright_yellow] EDIT [/bold black on bright_yellow] [bold bright_cyan]Clip: {clip.title}[/bold bright_cyan]")
+    console.print(
+        f" Current range: [bold bright_white]{clip.start_timecode}[/] [dim cyan]->[/] "
+        f"[bold bright_white]{clip.end_timecode}[/] ([bold bright_magenta]{clip.duration_seconds:.1f}s[/])"
+    )
 
-    new_start_raw = Prompt.ask("  [dim]New start timecode (HH:MM:SS, or press Enter to keep)[/dim]", default=clip.start_timecode)
-    new_end_raw = Prompt.ask("  [dim]New end timecode (HH:MM:SS, or press Enter to keep)[/dim]", default=clip.end_timecode)
+    new_start_raw = Prompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan][dim]New start timecode (HH:MM:SS, Enter to keep)[/dim]", default=clip.start_timecode)
+    new_end_raw = Prompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan][dim]New end timecode (HH:MM:SS, Enter to keep)[/dim]", default=clip.end_timecode)
 
     try:
         start_sec = timecode_to_seconds(new_start_raw)
@@ -116,7 +140,7 @@ def edit_clip_timecode(clip: ValidatedClip) -> ValidatedClip:
             return clip
 
         dur = end_sec - start_sec
-        success(f"Updated timecode: {new_start_raw} -> {new_end_raw} ({dur:.1f}s)")
+        success(f"Updated timecode: [bold bright_white]{new_start_raw}[/] -> [bold bright_white]{new_end_raw}[/] ([bold bright_magenta]{dur:.1f}s[/])")
         return ValidatedClip(
             clip_id=clip.clip_id,
             title=clip.title,
@@ -147,20 +171,25 @@ def curate_clips_interactively(clips: List[ValidatedClip]) -> List[ValidatedClip
     while True:
         console.print()
         console.print(render_clips_table(current_clips, active_indices))
-        console.print()
 
         selected_count = len(active_indices)
-        console.print(f" [dim]Selected {selected_count} of {len(current_clips)} clip(s)[/dim]")
-        console.print("[dim]─" * 60 + "[/dim]")
+        status_line = (
+            f" [bold bright_magenta]Active Clips:[/] [bold bright_white]{selected_count}[/] of [bold bright_white]{len(current_clips)}[/] selected  "
+            f"[dim]|[/dim]  [dim]Canvas: 1080x1920 (9:16)[/dim]"
+        )
+        console.print(status_line)
+        console.print("[dim cyan]" + "━" * 68 + "[/dim cyan]")
+
+        # Colorful keyboard action bar
         console.print(
-            " [bold cyan][A][/bold cyan] Approve & build Kdenlive project  "
-            " [bold cyan][T][/bold cyan] Toggle clips  "
-            " [bold cyan][E][/bold cyan] Edit timecode  "
-            " [bold cyan][Q][/bold cyan] Abort"
+            " [bold black on bright_green] A [/] Approve & Export   "
+            "[bold black on bright_cyan] T [/] Toggle Clips   "
+            "[bold black on bright_yellow] E [/] Edit Timecode   "
+            "[bold black on bright_red] Q [/] Abort"
         )
 
         action = Prompt.ask(
-            " [bold cyan]>[/bold cyan] Action",
+            " [bold bright_cyan] >>> [/bold bright_cyan][bold bright_white]Action[/bold bright_white]",
             choices=["A", "a", "T", "t", "E", "e", "Q", "q"],
             default="A",
         ).upper()
@@ -174,7 +203,7 @@ def curate_clips_interactively(clips: List[ValidatedClip]) -> List[ValidatedClip
 
         elif action == "T":
             console.print(" Enter clip numbers to toggle (e.g. '1, 3' or 'all'):")
-            raw_input = Prompt.ask(" [dim]Toggle[/dim]").strip().lower()
+            raw_input = Prompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan][dim]Toggle[/dim]").strip().lower()
             if raw_input == "all":
                 if len(active_indices) == len(current_clips):
                     active_indices.clear()
@@ -194,7 +223,7 @@ def curate_clips_interactively(clips: List[ValidatedClip]) -> List[ValidatedClip
                         pass
 
         elif action == "E":
-            clip_num = IntPrompt.ask(" Enter clip number to edit", default=1)
+            clip_num = IntPrompt.ask(" [bold bright_cyan] >>> [/bold bright_cyan]Enter clip number to edit", default=1)
             idx = clip_num - 1
             if 0 <= idx < len(current_clips):
                 updated_clip = edit_clip_timecode(current_clips[idx])
@@ -208,25 +237,26 @@ def curate_clips_interactively(clips: List[ValidatedClip]) -> List[ValidatedClip
 
 
 def render_summary_panel(project_path: Path, clips: List[ValidatedClip]) -> None:
-    """Renders a sleek summary panel upon successful project export."""
-    body = Text()
-    body.append("PROJECT READY FOR KDENLIVE\n\n", style="bold green")
-    body.append(f"Output File: ", style="bold white")
-    body.append(f"{project_path}\n", style="cyan")
-    body.append(f"Clips Placed: ", style="bold white")
-    body.append(f"{len(clips)} pre-cut sequence(s)\n", style="bright_white")
-    body.append(f"Aspect Ratio: ", style="bold white")
-    body.append("1080x1920 (9:16 Vertical)\n\n", style="bright_white")
-    body.append("Next Steps in Kdenlive:\n", style="bold cyan")
-    body.append("  1. Double-click the .kdenlive file to launch.\n", style="dim white")
-    body.append("  2. Reposition / pan & crop the speaker's face for vertical framing.\n", style="dim white")
-    body.append("  3. Apply your color grading, captions, or watermarks.\n", style="dim white")
-    body.append("  4. Render directly to MP4!\n", style="dim white")
+    """Renders a colorful, high-contrast summary panel upon successful project export."""
+    body = Text.from_markup(
+        f"[bold bright_green]PROJECT COMPILED FOR KDENLIVE[/bold bright_green]\n\n"
+        f"[bold bright_white]Output Path:[/]  [bold bright_cyan]{project_path}[/]\n"
+        f"[bold bright_white]Sequences:[/]    [bold black on bright_magenta] {len(clips)} PRE-CUT CLIPS [/]  "
+        f"[bold black on bright_yellow] 1080x1920 (9:16 VERTICAL) [/]  "
+        f"[bold black on deep_sky_blue1] MLT XML [/]\n\n"
+        f"[bold bright_cyan]Post-Production Workflow in Kdenlive:[/bold bright_cyan]\n"
+        f"  [bold bright_yellow]1.[/] [bright_white]Double-click the .kdenlive file to open directly in the editor.[/]\n"
+        f"  [bold bright_yellow]2.[/] [bright_white]Use 'Transform' or 'Motion Tracker' on Track V1 to center speaker's face.[/]\n"
+        f"  [bold bright_yellow]3.[/] [bright_white]Run 'Project -> Subtitles -> Speech Recognition' for animated captions.[/]\n"
+        f"  [bold bright_yellow]4.[/] [bright_white]Batch render individual 9:16 Shorts directly to MP4![/]"
+    )
 
     panel = Panel(
         body,
         box=box.ROUNDED,
-        border_style="green",
+        border_style="bright_green",
+        title="[bold black on bright_green] EXPORT COMPLETE [/]",
+        title_align="left",
         padding=(1, 2),
     )
     console.print()

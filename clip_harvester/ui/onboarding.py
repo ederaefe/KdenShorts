@@ -73,23 +73,22 @@ def save_api_key_permanently(api_key: str) -> bool:
 
 
 def render_kdenlive_tips_panel() -> None:
-    """Renders a brief, educational guide on 9:16 vertical editing while downloads proceed."""
-    tips = Text()
-    tips.append("QUICK KDENLIVE VERTICAL (9:16) WORKFLOW TIPS\n\n", style="bold cyan")
-    tips.append("1. Project Canvas: ", style="bold white")
-    tips.append("KdenShorts automatically sets resolution to 1080x1920 (9:16).\n", style="dim white")
-    tips.append("2. Face Centering:  ", style="bold white")
-    tips.append("Add the 'Transform' effect to Track V1 to adjust the horizontal X-offset.\n", style="dim white")
-    tips.append("3. Motion Tracking:", style="bold white")
-    tips.append("Apply Kdenlive's 'Motion Tracker' effect to follow pacing speakers across a stage.\n", style="dim white")
-    tips.append("4. Subtitles:      ", style="bold white")
-    tips.append("Use 'Project -> Subtitles -> Speech Recognition' for dynamic animated captions.\n", style="dim white")
+    """Renders a colorful, educational guide on 9:16 vertical editing while downloads proceed."""
+    tips = Text.from_markup(
+        "[bold bright_cyan]MASTERING 9:16 VERTICAL EDITING IN KDENLIVE[/bold bright_cyan]\n\n"
+        "  [bold bright_yellow]1. Vertical Canvas:[/]  [bright_white]KdenShorts automatically formats resolution to [/][bold bright_cyan]1080x1920 (9:16)[/].\n"
+        "  [bold bright_yellow]2. Face Centering:[/]   [bright_white]Apply the [/][bold bright_magenta]'Transform'[/][bright_white] effect to Track V1 to dial in horizontal X-offset.[/]\n"
+        "  [bold bright_yellow]3. Motion Tracking:[/]  [bright_white]Use Kdenlive's [/][bold deep_sky_blue1]'Motion Tracker'[/][bright_white] effect to follow pacing speakers.[/]\n"
+        "  [bold bright_yellow]4. Dynamic Subtitles:[/] [bright_white]Run [/][bold bright_green]'Project -> Subtitles -> Speech Recognition'[/][bright_white] for animated captions.[/]"
+    )
 
     panel = Panel(
         tips,
         box=box.ROUNDED,
-        border_style="dim_cyan",
-        padding=(0, 2),
+        border_style="bright_blue",
+        title="[bold black on bright_cyan] WORKFLOW TIPS [/]",
+        title_align="left",
+        padding=(1, 2),
     )
     console.print(panel)
 

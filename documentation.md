@@ -171,5 +171,27 @@ KdenShorts behaves as a first-class citizen across Windows, macOS, and Linux:
 4. **Targeted Diagnostic Guidance**:
    - When any binary dependency (`ffmpeg`, `ffprobe`, `kdenlive`) is missing, error messages, prompts, and log hints output the exact native package manager command for the detected operating system rather than a generic Windows command.
 
+---
+
+## 8. High-Contrast Terminal UI Design System & Neon Palette
+
+The CLI user interface adheres to a high-contrast, cyberpunk-inspired developer aesthetic:
+
+1. **Vibrant Palette Hierarchy**:
+   - **Primary Action & Accent**: `bold bright_cyan` for banners, paths, and step dividers.
+   - **AI & Secondary Context**: `bold bright_magenta` for model names and timing data.
+   - **Emphasis & Warnings**: `bold bright_yellow` for timecodes, quotes, and option tags.
+   - **Success & Approvals**: `bold bright_green` for active selections and completion cards.
+   - **Categories & Types**: `bold black on deep_sky_blue1` for semantic hook labels.
+2. **High-Contrast Pill Badges**:
+   - Status markers, metadata categories, and keyboard shortcuts are styled as solid-background badges (`[bold black on bright_cyan]`, `[bold black on bright_green]`, `[bold black on bright_magenta]`).
+3. **Interactive Curation Table**:
+   - Rounded border framing with blue accent borders (`box.ROUNDED`, `border_style="bright_blue"`).
+   - Distinctive active vs. excluded row styling, italic yellow hook text, and color-coded confidence levels.
+   - Dedicated keyboard action bar with color-coded key pills (`[ A ]`, `[ T ]`, `[ E ]`, `[ Q ]`).
+4. **Emoji-Free Text Typography**:
+   - Strictly utilizes box-drawing characters (`━`, `│`, `┌`, `└`), ASCII brackets, and styled text badges without emojis.
+
+
 
 
