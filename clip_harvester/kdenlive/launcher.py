@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -27,25 +28,43 @@ def find_kdenlive_executable(custom_path: Optional[str] = None) -> Optional[Path
     if which_path:
         return Path(which_path).resolve()
 
-    # 3. Known Windows directories
+    # 3. Known platform directories
     home = Path.home()
-    program_files = Path(os.environ.get("ProgramFiles", "C:/Program Files"))
-    program_files_x86 = Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)"))
+    system = sys.platform.lower()
 
-    candidates = [
-        # User AppData Local Programs (Standard per-user installer)
-        home / "AppData/Local/Programs/Kdenlive/bin/kdenlive.exe",
-        home / "AppData/Local/Programs/kdenlive/bin/kdenlive.exe",
-        home / "AppData/Local/Programs/Kdenlive/kdenlive.exe",
-        home / "AppData/Local/Programs/kdenlive/kdenlive.exe",
-        # System Program Files
-        program_files / "kdenlive/bin/kdenlive.exe",
-        program_files / "Kdenlive/bin/kdenlive.exe",
-        program_files / "kdenlive/kdenlive.exe",
-        program_files / "Kdenlive/kdenlive.exe",
-        program_files_x86 / "kdenlive/bin/kdenlive.exe",
-        program_files_x86 / "Kdenlive/bin/kdenlive.exe",
-    ]
+    candidates = []
+
+    if system.startswith("win") or os.name == "nt":
+        program_files = Path(os.environ.get("ProgramFiles", "C:/Program Files"))
+        program_files_x86 = Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)"))
+        candidates.extend([
+            home / "AppData/Local/Programs/Kdenlive/bin/kdenlive.exe",
+            home / "AppData/Local/Programs/kdenlive/bin/kdenlive.exe",
+            home / "AppData/Local/Programs/Kdenlive/kdenlive.exe",
+            home / "AppData/Local/Programs/kdenlive/kdenlive.exe",
+            program_files / "kdenlive/bin/kdenlive.exe",
+            program_files / "Kdenlive/bin/kdenlive.exe",
+            program_files / "kdenlive/kdenlive.exe",
+            program_files / "Kdenlive/kdenlive.exe",
+            program_files_x86 / "kdenlive/bin/kdenlive.exe",
+            program_files_x86 / "Kdenlive/bin/kdenlive.exe",
+        ])
+    elif system.startswith("darwin"):
+        candidates.extend([
+            Path("/Applications/kdenlive.app/Contents/MacOS/kdenlive"),
+            home / "Applications/kdenlive.app/Contents/MacOS/kdenlive",
+            Path("/Applications/Kdenlive.app/Contents/MacOS/kdenlive"),
+            home / "Applications/Kdenlive.app/Contents/MacOS/kdenlive",
+        ])
+    else:
+        # Linux / Unix
+        candidates.extend([
+            Path("/usr/bin/kdenlive"),
+            Path("/usr/local/bin/kdenlive"),
+            Path("/snap/bin/kdenlive"),
+            Path("/var/lib/flatpak/exports/bin/org.kde.kdenlive"),
+            home / ".local/share/flatpak/exports/bin/org.kde.kdenlive",
+        ])
 
     for candidate in candidates:
         if candidate.exists() and candidate.is_file():
@@ -78,44 +97,71 @@ def open_in_kdenlive(project_path: Path, custom_exe: Optional[Path] = None) -> b
         except Exception:
             pass
 
-    # Windows shell fallback if direct executable invocation is unavailable
+    # Operating system shell fallbacks
     if os.name == "nt":
         try:
             os.startfile(str(resolved_project))
             return True
         except Exception:
             return False
+    elif sys.platform.startswith("darwin"):
+        try:
+            subprocess.Popen(["open", str(resolved_project)], close_fds=True)
+            return True
+        except Exception:
+            return False
+    else:
+        # Linux / BSD (xdg-open)
+        xdg_path = shutil.which("xdg-open")
+        if xdg_path:
+            try:
+                subprocess.Popen([xdg_path, str(resolved_project)], close_fds=True)
+                return True
+            except Exception:
+                return False
 
     return False
 
 
 def trigger_kdenlive_background_install() -> Optional[subprocess.Popen]:
-    """Triggers background installation of Kdenlive via winget if available.
+    """Triggers background installation of Kdenlive via the native OS package manager if available.
 
-    Returns the subprocess.Popen instance running the installer, or None if winget is unavailable.
+    Returns the subprocess.Popen instance running the installer, or None if unavailable.
     """
-    if os.name != "nt":
-        return None
+    cmd = None
 
-    winget_path = shutil.which("winget")
-    if not winget_path:
-        return None
+    if os.name == "nt":
+        winget_path = shutil.which("winget")
+        if winget_path:
+            cmd = [
+                winget_path,
+                "install",
+                "KDE.Kdenlive",
+                "--silent",
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+            ]
+    elif sys.platform.startswith("darwin"):
+        brew_path = shutil.which("brew")
+        if brew_path:
+            cmd = [brew_path, "install", "--cask", "kdenlive"]
+    else:
+        # Linux
+        flatpak_path = shutil.which("flatpak")
+        if flatpak_path:
+            cmd = [flatpak_path, "install", "-y", "flathub", "org.kde.kdenlive"]
 
-    try:
-        cmd = [
-            winget_path,
-            "install",
-            "KDE.Kdenlive",
-            "--silent",
-            "--accept-package-agreements",
-            "--accept-source-agreements",
-        ]
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=subprocess.DETACHED_PROCESS,
-        )
-        return proc
-    except Exception:
-        return None
+    if cmd:
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.DETACHED_PROCESS if os.name == "nt" else 0,
+                close_fds=True,
+            )
+            return proc
+        except Exception:
+            return None
+
+    return None

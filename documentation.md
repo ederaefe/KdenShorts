@@ -150,4 +150,26 @@ To prevent raw `ModuleNotFoundError` crashes when cloning or running KdenShorts 
 3. **Automatic In-Place Installation**: When missing Python modules are detected on launch, `bootstrap` displays a clean ASCII notice and executes `pip install` automatically in-process via `sys.executable`.
 4. **Fallback Guidance**: If automated installation is blocked (e.g. offline, corporate proxy, restricted container), the bootstrap exits cleanly without a traceback, outputting the exact, copy-pasteable terminal command for the user's detected operating system.
 
+---
+
+## 7. Cross-Platform Operating System Sensitivity
+
+KdenShorts behaves as a first-class citizen across Windows, macOS, and Linux:
+
+1. **Kdenlive Application Discovery**:
+   - **Windows**: Checks user `%LOCALAPPDATA%\Programs\Kdenlive` and `%PROGRAMFILES%\Kdenlive`.
+   - **macOS**: Searches `/Applications/kdenlive.app/Contents/MacOS/kdenlive` and user `~/Applications`.
+   - **Linux**: Probes standard binary locations (`/usr/bin/kdenlive`, `/usr/local/bin/kdenlive`), Snap (`/snap/bin/kdenlive`), and Flatpak system/user exports (`org.kde.kdenlive`).
+2. **Native Project Launch & Shell Fallback**:
+   - If direct executable invocation is unavailable, KdenShorts falls back to native OS URL/file dispatchers:
+     - Windows: `os.startfile`
+     - macOS: `subprocess.Popen(["open", project_path])`
+     - Linux: `subprocess.Popen(["xdg-open", project_path])`
+3. **Persistent Credential Management**:
+   - Windows: Configured permanently via PowerShell into the User Environment table.
+   - macOS / Linux: Automatically detects the user's active shell configuration (`~/.zshrc`, `~/.bashrc`, or `~/.profile`) and appends the export directive safely.
+4. **Targeted Diagnostic Guidance**:
+   - When any binary dependency (`ffmpeg`, `ffprobe`, `kdenlive`) is missing, error messages, prompts, and log hints output the exact native package manager command for the detected operating system rather than a generic Windows command.
+
+
 

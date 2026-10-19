@@ -35,7 +35,7 @@ def validate_gemini_api_key(api_key: str) -> Tuple[bool, str]:
 
 
 def save_api_key_permanently(api_key: str) -> bool:
-    """Persists the API key permanently in the Windows User Environment."""
+    """Persists the API key permanently in the user environment across OS platforms."""
     os.environ["GEMINI_API_KEY"] = api_key
     if os.name == "nt":
         try:
@@ -48,7 +48,28 @@ def save_api_key_permanently(api_key: str) -> bool:
             return True
         except Exception:
             return False
-    return False
+    else:
+        # macOS and Linux: append to active shell profile (~/.zshrc, ~/.bashrc, or ~/.profile)
+        home = Path.home()
+        candidates = [home / ".zshrc", home / ".bashrc", home / ".profile"]
+        export_line = f'\nexport GEMINI_API_KEY="{api_key}"\n'
+
+        for rc_file in candidates:
+            if rc_file.exists():
+                try:
+                    with open(rc_file, "a", encoding="utf-8") as f:
+                        f.write(export_line)
+                    return True
+                except Exception:
+                    pass
+
+        # Fallback to ~/.profile
+        try:
+            with open(home / ".profile", "a", encoding="utf-8") as f:
+                f.write(export_line)
+            return True
+        except Exception:
+            return False
 
 
 def render_kdenlive_tips_panel() -> None:
@@ -127,10 +148,13 @@ def run_concurrent_onboarding(
                 is_valid, msg = validate_gemini_api_key(key_input)
 
             if is_valid:
+                from clip_harvester.bootstrap import detect_os_info
+
+                os_info = detect_os_info()
                 success("Gemini API Key validated successfully!")
-                if Confirm.ask(" Save API key permanently to your Windows User Environment?", default=True):
+                if Confirm.ask(f" Save API key permanently for {os_info.display_name}?", default=True):
                     if save_api_key_permanently(key_input):
-                        success("Saved permanently to Windows environment.")
+                        success(f"Saved permanently to {os_info.display_name} environment.")
                     else:
                         os.environ["GEMINI_API_KEY"] = key_input
                 else:

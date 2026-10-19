@@ -62,7 +62,12 @@ def extract_and_chunk_audio(
         raise FileNotFoundError(f"Source media not found: {source_media}")
 
     if not verify_ffmpeg_installed():
-        raise FileNotFoundError("ffmpeg is not found on system PATH. Please ensure FFmpeg is installed.")
+        from clip_harvester.bootstrap import detect_os_info
+
+        os_info = detect_os_info()
+        raise FileNotFoundError(
+            f"ffmpeg is not found on system PATH. Install for {os_info.display_name}: {os_info.ffmpeg_install_cmd}"
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
 

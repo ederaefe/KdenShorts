@@ -60,7 +60,7 @@ def test_wait_for_downloader_already_finished_error() -> None:
 
 
 def test_save_api_key_permanently_sets_env(monkeypatch) -> None:
-    """Verifies that save_api_key_permanently sets GEMINI_API_KEY in os.environ."""
+    """Verifies that save_api_key_permanently sets GEMINI_API_KEY in os.environ on Windows."""
     import os
 
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
@@ -68,3 +68,17 @@ def test_save_api_key_permanently_sets_env(monkeypatch) -> None:
     with patch("subprocess.run"):
         save_api_key_permanently("test-key-12345")
         assert os.environ.get("GEMINI_API_KEY") == "test-key-12345"
+
+
+def test_save_api_key_permanently_unix(tmp_path, monkeypatch) -> None:
+    """Verifies that save_api_key_permanently appends export statement to shell RC file on Unix."""
+    from pathlib import Path
+
+    zshrc = tmp_path / ".zshrc"
+    zshrc.write_text("# existing config\n", encoding="utf-8")
+
+    with patch("os.name", "posix"), patch("pathlib.Path.home", return_value=tmp_path):
+        saved = save_api_key_permanently("secret-gemini-key")
+        assert saved is True
+        content = zshrc.read_text(encoding="utf-8")
+        assert 'export GEMINI_API_KEY="secret-gemini-key"' in content

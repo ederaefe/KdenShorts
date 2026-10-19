@@ -69,7 +69,12 @@ def probe_media_file(media_path: Path) -> MediaMetadata:
         raise FileNotFoundError(f"Media file not found: {media_path}")
 
     if not verify_ffprobe_installed():
-        raise FileNotFoundError("ffprobe is not found on system PATH. Please ensure FFmpeg is installed.")
+        from clip_harvester.bootstrap import detect_os_info
+
+        os_info = detect_os_info()
+        raise FileNotFoundError(
+            f"ffprobe is not found on system PATH. Install for {os_info.display_name}: {os_info.ffmpeg_install_cmd}"
+        )
 
     cmd = [
         "ffprobe",
